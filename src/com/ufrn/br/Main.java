@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,6 +18,7 @@ import com.opencsv.bean.CsvToBeanBuilder;
 public class Main {
 	private static List<String> ids = new ArrayList<String>();
 	private static List<String> animes = new ArrayList<String>();
+	private static List<Integer[]> colunas = new ArrayList<Integer[]>();
 	static Map<String, List<HashMap<String, Integer>>> usersData = new HashMap<>();
 	static HashMap<String, Integer> newUser;
 
@@ -26,18 +28,15 @@ public class Main {
 		ContarUsuarios(resultado);
 		System.out.println(ids);
 		System.out.println(animes);
-//		System.out.println(usersData);
-//		System.out.println(usersData.size());
-//		usersData.forEach((key, value) -> System.out.println(key + ":" + value));
 		Integer[][] matriz = construirMatrizes();
-		calcularSimilaridade(matriz);
-		printGrid(matriz);
+		Double[][] matrizSimilaridade = calcularSimilaridade(matriz);
+		printCosineMatrix(matrizSimilaridade, colunas.size());
 	}
 	
 	public static List<DataCSV> LerCsv() {
 		Reader reader = null;
 		try {
-			reader = Files.newBufferedReader(Paths.get("rating3.csv"));
+			reader = Files.newBufferedReader(Paths.get("rating2.csv"));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -101,21 +100,41 @@ public class Main {
 			}
 			index1++;
 		}
+//		usersData.clear();
 		return matriz;
 	}
-	public static void calcularSimilaridade(Integer[][] matriz) {
-		Integer[][] matrizSimilaridade = new Integer[ids.size()][ids.size()];
+	public static double cosineSimilarity(Integer[] firstVector, Integer[] secondVector) {
+	    double dotProduct = 0;
+	    double normA = 0;
+	    double normB = 0;
+	    
+	    for (int i = 0; i < firstVector.length; i++) {
+	        dotProduct += firstVector[i] * secondVector[i];
+	        normA += Math.pow(firstVector[i], 2);
+	        normB += Math.pow(secondVector[i], 2);
+	    }   
+	    double result = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+	    return result;
+	}
+	public static Double[][] calcularSimilaridade(Integer[][] matriz) {
+	
+	
+		for(int i = 0; i < animes.size(); i++){
+			Integer[] coluna = new Integer[ids.size()];
+			for(int j = 0; j < ids.size(); j++){
+			    coluna[j] = matriz[j][i];	 
+			}
+			colunas.add(coluna);
+		}
+
+		Double[][] matrizSimilaridade = new Double[colunas.size()][colunas.size()];
+		for(int i = 0; i < colunas.size(); i++) {
+			for(int j = 0; j < colunas.size(); j++) {
+				matrizSimilaridade[i][j] = cosineSimilarity(colunas.get(i), colunas.get(j));
+			}	
+		}
 		
-		for(int i = 0; i < ids.size(); i++){
-			System.out.println(usersData.get(ids.get(i))+" linha");
-		      for(int j = 0; j < ids.size(); j++){
-		    	 if(i != j) {
-		    		 System.out.println(usersData.get(ids.get(j)).size());
-		    		 System.out.println(usersData.get(ids.get(j))+" col");
-		    	 }
-		      }
-		      System.out.println();
-		   }
+		return matrizSimilaridade;
 	}
 	
 	public static void printGrid(Integer[][] matriz)
@@ -129,5 +148,17 @@ public class Main {
 	      System.out.println();
 	   }
 	}
-
+	public static void printCosineMatrix(Double[][] matriz, int size)
+	{
+		DecimalFormat df2 = new DecimalFormat("#.##");
+	   for(int i = 0; i < size; i++)
+	   {
+	      for(int j = 0; j < size; j++)
+	      {	
+	         System.out.print("  |  " + df2.format(matriz[i][j]));
+	      }
+	      System.out.println("  |");
+	      System.out.println("-------------------------------------------------------------------------------------------------");
+	   }
+	}
 }
